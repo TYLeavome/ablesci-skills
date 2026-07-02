@@ -53,6 +53,10 @@ export ABLESCI_PASSWORD="your_password"
 
 建议配合 cron 定时任务每天早上 9:00 自动执行。
 
+### 效果截图
+
+![ablesci-daily-checkin 签到效果](ablesci-daily-checkin/skill效果.png)
+
 ---
 
 ## download-pdf
@@ -88,7 +92,7 @@ Skills/
 ├── README.md                        ← 本文件
 ├── ablesci-daily-checkin/
 │   ├── SKILL.md                     ← Skill 定义文件
-│   └── README.md                    ← 原独立说明（已废弃，参见本文件）
+│   └── skill效果.png                 ← 签到效果截图
 └── download-pdf/
     └── SKILL.md                     ← Skill 定义文件
 ```
