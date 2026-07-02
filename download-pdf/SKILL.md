@@ -28,7 +28,6 @@ description: 用于根据提供的 DOI 号下载文献, 优先使用本地脚本
 - `doi`: 用户提供的 DOI 字符串
 - 可选: `download_root` 或项目工作目录
 - 可选: `PDF_downloader.py` 脚本路径
-- 可选: "启用OpenClaw Chrome Extension" python 脚本路径
 
 ## 输出
 - 成功时: 告知用户该文献已经下载成功，文件保存在 `~/Documents/PDFs/` 目录
@@ -75,7 +74,6 @@ description: 用于根据提供的 DOI 号下载文献, 优先使用本地脚本
 3. 确认以下路径可用:
    - `PDF_downloader.py`
    - `PDFs/`
-   - "启用OpenClaw Chrome Extension" python 脚本
 
 ### 第 2 步: 调用 `PDF_downloader.py`
 1. 按 `PDF_downloader.py` 脚本内部说明调用脚本。
@@ -98,7 +96,7 @@ description: 用于根据提供的 DOI 号下载文献, 优先使用本地脚本
 import shutil
 import os
 
-pdfs_dir = '/Users/tianye/.openclaw/scripts/PDFs'
+pdfs_dir = './PDFs'  # 本地脚本的输出目录，根据实际路径调整
 doi = '10.xxxx/xxxx'  # 当前 DOI
 dest_dir = os.path.expanduser('~/Documents/PDFs')
 
@@ -118,12 +116,10 @@ if os.path.exists(pdf_path):
 - 目标路径为 `~/Documents/PDFs/`
 - **PDFs 目录仅作中转，任务结束后必须清空，不得留存任何 PDF 文件**
 
-### 第 3 步: 打开科研通并接管浏览器
+### 第 3 步: 打开科研通
 1. 启动浏览器并进入: `https://www.ablesci.com/`
-2. 运行"启用OpenClaw Chrome Extension" python 脚本接管浏览器。
-3. 确认浏览器已可由 OpenClaw 控制。
-4. 若页面未登录且当前环境具备已保存登录态, 则继续使用现有登录态。
-5. 若没有登录态, 则按照环境中预配置的合法方式登录; 不要擅自修改账号设置。
+2. 若页面未登录且当前环境具备已保存登录态, 则继续使用现有登录态。
+3. 若没有登录态, 则按照环境中预配置的合法方式登录; 不要擅自修改账号设置。
 
 ### 第 4 步: 发布文献求助
 1. 在网页右上角点击"发布文献求助"按钮。
@@ -247,28 +243,7 @@ if os.path.exists(pdf_path):
 ### 模板 4: 异常中断
 `DOI: {doi}\n下载流程在步骤 {step_name} 处中断。错误概述: {error_summary}。当前未删除 Failed.txt 中原始失败记录。`
 
-## OpenClaw 可直接参考的执行指令
-你是一个只负责根据 DOI 下载文献 PDF 的自动化代理。请严格按以下顺序执行:
-
-1. 优先调用 `PDF_downloader.py` 下载目标 DOI 的 PDF, 调用方法以该脚本内说明为准。
-2. 若下载成功, 将 PDF 从 `PDFs/` 移动到 `~/Documents/PDFs/` 目录。
-3. 若下载失败, 且 `PDFs/Failed.txt` 存在并包含该 DOI, 则打开 `https://www.ablesci.com/`。
-4. 使用"启用OpenClaw Chrome Extension" python 脚本接管浏览器。
-5. 点击右上角"发布文献求助"。
-6. 输入 DOI 后点击"智能提取文献信息"。
-7. 在弹窗中点击"信息正确, 直接发布"。
-8. 弹窗更新后点击"查看求助详情"。
-9. 若跳转后立即弹出"恭喜您, 已经有人上传了文件, 请在 48 小时内查看并审核。"则点击"确定"。
-10. 在"待审核"右侧找到文献下载链接并点击, 等待 PDF 下载完成。
-11. 关闭下载产生的新标签页, 回到详情页。
-12. 点击"采纳文件", 并在确认弹窗中点击"确定"。
-13. 如果随后出现"感谢使用科研通, 请帮忙推荐该网站"等类似弹窗, 点击"确定"关闭。
-14. 从 `PDFs/Failed.txt` 中删除当前 DOI 对应的整条失败记录: DOI 行 + 下方异常信息行 + 关联换行符, 并将清理后的 Failed.txt 也移动到 `~/Documents/PDFs/` 目录。
-15. 向用户发送成功消息。
-16. 若超过 24 小时仍未获取到文献, 向用户发送"科研通已自动关闭该文献求助"的消息。
-17. 除以上操作外, 不要执行任何无关操作。
-
-## 可选附录: `Failed.txt` 清理伪代码
+## 附录: `Failed.txt` 清理伪代码
 ```python
 from pathlib import Path
 import re
@@ -293,118 +268,6 @@ if failed_path.exists():
         i += 1
     failed_path.write_text(''.join(new_lines), encoding='utf-8')
 ```
-
-## 浏览器自动化踩坑经验总结（2026-03-21）
-
-### 1. Chrome Relay Tab 不稳定问题
-
-**现象**：执行 `click` 等操作后，tab 进入 "tab not found" 状态，后续所有操作都失败。
-
-**原因**：点击链接触发 SPA 路由切换后，OpenClaw Chrome Relay 的 targetId 虽然保留，但底层 CDP 连接丢失。
-
-**对策**：
-- 执行关键操作（点击按钮/输入）后，立即用 `tabs` 命令确认 tab 是否还活着
-- 若返回 "tab not found"，立即用 `browser open` 创建新 tab，再重新操作
-- 不要在单一 tab 上连续做多步操作，每步之间加 `tabs` 检查
-
-### 2. 页面 URL 与实际状态不同步
-
-**现象**：执行 `evaluate(() => { link.click() })` 后 URL 变了，但 tab title 仍为空，snapshot 取到的 DOM 是旧页面的。
-
-**原因**：SPA 页面点击后 URL 变化是异步的，CDP 快照可能拿到的是路由切换前的 DOM。
-
-**对策**：
-- 已知路由（如发布页 `https://www.ablesci.com/assist/create`）直接用 `navigate` 打开，不要通过点击链接跳转
-- JavaScript `click()` 触发导航后，用 `navigate` 重新加载目标 URL 确保状态同步
-
-### 3. ARIA 快照 ref 失效
-
-**现象**：拿到 snapshot 后，用 `axXX` ref 做 `act` 操作报 `TimeoutError`。
-
-**原因**：SPA 页面任何操作（甚至只是等待）都可能导致 DOM 结构变化，ref 指向的节点已不存在。
-
-**对策**：
-- 每次需要操作前，都重新做一次 `snapshot` 获取最新 ref
-- 不要跨操作使用同一个 ref
-
-### 4. evaluate + setTimeout 的无效性
-
-**现象**：`evaluate(() => { setTimeout(() => { /* 操作 */ }, 2000); return 'done'; })` 返回 'done' 后，setTimeout 里的操作已无法获取返回值。
-
-**原因**：evaluate 函数立即返回，后续的 setTimeout 回调拿不到 CDP 执行上下文。
-
-**对策**：不要在 evaluate 里用 setTimeout 做等待，应该在外部用 `timeoutMs` 参数控制等待节奏。
-
-### 5. 表单输入的正确方法
-
-**现象**：`act kind=fill` / `act kind=type` 报 `fields are required` 或 `TimeoutError`。
-
-**原因**：OpenClaw browser 的 `fill`/`type`/`click` 依赖 aria-ref 或 selector，但 ref 总是失效。
-
-**正确方法**：使用 `act kind=evaluate` 执行 JavaScript：
-
-```javascript
-// 通过已知 ID 填写表单（最可靠）
-const input = document.getElementById('onekey');
-input.focus();
-input.value = '10.1111/1541-4337.12869';
-input.dispatchEvent(new Event('input', { bubbles: true }));
-input.dispatchEvent(new Event('change', { bubbles: true }));
-return 'success: ' + input.value;
-```
-
-**找到表单元素的方法**：
-1. `evaluate(() => { const inputs = document.querySelectorAll('input'); ... })` 列出所有 input
-2. 识别 `id` 属性（如 `onekey`、`Assist-doi`）
-3. 后续用 `document.getElementById(id)` 操作
-
-### 6. 科研通网站关键元素 ID 速查
-
-| 元素 | ID |
-|------|-----|
-| 一键求助输入框 | `onekey` |
-| DOI 输入框 | `Assist-doi` |
-| 标题输入框 | `Assist-title` |
-| 文献链接输入框 | `Assist-url` |
-| 悬赏积分输入框 | `Assist-point` |
-| 备注输入框 | `Assist-remark` |
-| 自动关闭时间 | `Assist-close_at` |
-
-### 7. 多 tab 管理策略
-
-**现象**：调试过程中累积大量无用 tab，目标 tab 越来越难找。
-
-**策略**：
-- 操作完成后随手关闭不用的 tab（`browser close`）
-- 每次重新开始时只保留一个干净的 tab
-- 重大操作前用 `browser stop` + `browser start` 重置 browser 状态
-
-### 8. `browser open` vs `browser navigate`
-
-- `browser open`：创建**新** tab，返回新 targetId
-- `browser navigate`：在**当前** tab 中加载 URL（若 tab 已死则报错）
-- 路由已知时用 `navigate`，不确定时用 `open`
-
-### 9. 点击链接的推荐写法
-
-```javascript
-// 通过文本内容查找并点击链接（比 aria-ref 稳定）
-const links = document.querySelectorAll('a');
-for (const l of links) {
-  if (l.textContent.trim() === '发布文献求助') {
-    l.click();
-    return 'clicked';
-  }
-}
-```
-
-### 10. 执行节奏建议
-
-1. **获取页面**：`navigate` 或 `open`（直接给 URL，不要通过链接跳转）
-2. **操作表单**：用 `evaluate` + `document.getElementById`
-3. **点击按钮**：优先 `evaluate` 里的 `click()`，aria-ref act 作为备选
-4. **检查结果**：用 `screenshot` 确认，不要只靠返回值判断
-5. **状态不对**：立即 `browser stop` + `browser start` 重置
 
 ## 科研通已有文献时的下载经验
 

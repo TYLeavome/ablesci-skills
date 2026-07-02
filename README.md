@@ -81,7 +81,6 @@ export ABLESCI_PASSWORD="your_password"
 - `PDF_downloader.py` 脚本
 - `PDFs/` 输出目录
 - 科研通登录态（由浏览器或脚本管理）
-- `启用OpenClaw Chrome Extension` Python 脚本（用于浏览器自动化）
 
 ---
 
